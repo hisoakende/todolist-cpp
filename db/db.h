@@ -1,5 +1,9 @@
 #pragma once
 #include <pqxx/pqxx>
 
+using namespace pqxx;
 
-pqxx::result getAllUsers();
+
+result getAllUsers();
+
+bool tryToCreateUser(std::string username, std::string email, std::string password, std::string &exceptionText);
