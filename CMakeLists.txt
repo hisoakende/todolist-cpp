@@ -23,6 +23,8 @@ target_link_libraries(todolist drogon)
 
 target_link_libraries(db pqxx)
 
+target_link_libraries(utils db)
+
 target_link_libraries(utils pqxx)
 target_link_libraries(utils drogon)
 target_link_libraries(utils OpenSSL::Crypto)

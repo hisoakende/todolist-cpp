@@ -10,8 +10,10 @@ CREATE TABLE users
 CREATE TABLE tokens
 (
     id          SERIAL PRIMARY KEY,
+    value       CHAR(64)                                    NOT NULL UNIQUE,
     user_id     INT REFERENCES users (id) ON DELETE CASCADE NOT NULL,
-    create_time TIMESTAMP                                   NOT NULL
+    is_access   BOOLEAN,
+    create_time INT                                         NOT NULL
 );
 
 CREATE TABLE categories
@@ -28,4 +30,3 @@ CREATE TABLE notes
     author_id   INT          REFERENCES users (id) ON DELETE SET NULL,
     category_id INT          REFERENCES categories (id) ON DELETE SET NULL
 );
-

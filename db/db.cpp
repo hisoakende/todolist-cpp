@@ -21,3 +21,24 @@ bool tryToCreateUser(std::string username, std::string email, std::string passwo
         return false;
     }
 }
+
+
+result getUserForAuthentication(std::string email) {
+    return worker.exec("SELECT id, password FROM users WHERE email=\'" + email + "\'");
+}
+
+
+result getToken(std::string userId, std::string isAccess) {
+    return worker.exec("SELECT id, value FROM tokens WHERE user_id=\'" + userId + "\' AND is_access=\'" + isAccess +"\'");
+}
+
+
+void saveToken(std::string value, std::string userId, std::string isAccess, std::string createTime) {
+    worker.exec("INSERT INTO tokens (value, user_id, is_access, create_time) VALUES (\'"
+                + value + "\', \'" + userId + "\', \'" + isAccess + "\', \'" + createTime + "\')");
+}
+
+
+void updateToken(std::string id, std::string value, std::string createTime) {
+    worker.exec("UPDATE tokens SET value=\'" + value + "\', create_time=\'" + createTime +"\' WHERE id=\'" + id +"\'");
+}
