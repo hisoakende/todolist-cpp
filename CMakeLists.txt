@@ -29,4 +29,6 @@ target_link_libraries(utils pqxx)
 target_link_libraries(utils drogon)
 target_link_libraries(utils OpenSSL::Crypto)
 
+target_link_libraries(validations db)
+
 target_link_libraries(validations drogon)

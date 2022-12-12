@@ -9,16 +9,22 @@
 typedef std::function<void(const drogon::HttpResponsePtr &)> Callback;
 
 
-void printRequestInfo(const drogon::HttpRequestPtr &request);
+void printRequestInfo(drogon::HttpRequestPtr request, drogon::HttpStatusCode status);
 
 void createJsonBody(Json::Value &json, pqxx::result &data);
 
-void processTheRequestWithTheEmptyBody(Json::Value json, drogon::HttpResponsePtr &response);
+drogon::HttpResponsePtr processTheResponseIfRequestBodyIsEmpty();
 
 std::string getHashedString(std::string password);
 
 void processUniqueViolationTextForUserCreation(std::string exceptionText, Json::Value &json);
 
-std::string generateToken(std::string tokenType);
+std::string generateToken(std::string userId, std::string isAccessToken);
 
-std::string processTokenHandling(std::string userId, std::string tokenType);
+std::string processTokenHandling(std::string userId, std::string isAccessToken);
+
+drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, Json::Value json, drogon::HttpStatusCode status);
+
+drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, drogon::HttpStatusCode status);
+
+std::pair<bool, pqxx::result> getTokenData(std::string userToken, std::string isAccess, Json::Value &json);

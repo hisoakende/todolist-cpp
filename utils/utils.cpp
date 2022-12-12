@@ -1,8 +1,9 @@
 #include "utils.h"
 
 
-void printRequestInfo(const drogon::HttpRequestPtr &request) {
-    std::cout << "REQUEST: " << request->getMethodString() << " " << request->getPath() << std::endl;
+void printRequestInfo(drogon::HttpRequestPtr request, drogon::HttpStatusCode status) {
+    std::cout << "REQUEST: HTTP " << request->getMethodString() << " " 
+                            << request->getPath() << " RESPONSE CODE: " << status << std::endl;
 }
 
 
@@ -26,10 +27,12 @@ void createJsonBody(Json::Value &json, pqxx::result &data) {
 }
 
 
-void processTheRequestWithTheEmptyBody(Json::Value json, drogon::HttpResponsePtr &response) {
-    json["message"] = "body is required";
-    response = drogon::HttpResponse::newHttpJsonResponse(json);
+drogon::HttpResponsePtr processTheResponseIfRequestBodyIsEmpty() {
+    Json::Value jsonBody;
+    jsonBody["message"] = "body is required";
+    drogon::HttpResponsePtr response = drogon::HttpResponse::newHttpJsonResponse(jsonBody);
     response->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
+    return response;
 }
 
 
@@ -60,19 +63,53 @@ void processUniqueViolationTextForUserCreation(std::string exceptionText, Json::
 }
 
 
-std::string generateToken(std::string userId, std::string tokenType) {
-    std::string s = std::to_string(time(nullptr)) + tokenType + userId;
+std::string generateToken(std::string userId, std::string isAccessToken) {
+    std::string s = std::to_string(time(nullptr)) + isAccessToken + userId;
     return getHashedString(s);
 }
 
 
-std::string processTokenHandling(std::string userId, std::string tokenType) {
-    pqxx::result oldToken = getToken(userId, tokenType);
-    std::string newToken = generateToken(tokenType, userId);
+std::string processTokenHandling(std::string userId, std::string isAccessToken) {
+    pqxx::result oldToken = getTokenByUserId(userId, isAccessToken);
+    std::string newToken = generateToken(isAccessToken, userId);
     if (oldToken.size() == 0) {
-        saveToken(newToken, userId, tokenType, std::to_string(time(nullptr)));
+        saveToken(newToken, userId, isAccessToken, std::to_string(time(nullptr)));
     } else {
         updateToken(to_string(oldToken[0]["id"]), newToken, std::to_string(time(nullptr)));
     }
     return newToken;
+}
+
+
+drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, Json::Value json, drogon::HttpStatusCode status) {
+    printRequestInfo(request, status);
+    drogon::HttpResponsePtr response = drogon::HttpResponse::newHttpJsonResponse(json);
+    response->setStatusCode(status);
+    return response;
+}
+
+
+drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, drogon::HttpStatusCode status) {
+    printRequestInfo(request, status);
+    drogon::HttpResponsePtr response = drogon::HttpResponse::newHttpResponse();
+    response->setStatusCode(status);
+    return response;
+}
+
+
+std::pair<bool, pqxx::result> getTokenData(std::string userToken, std::string isAccess, Json::Value &json) {
+    pqxx::result dbTokenData = getTokenByValue(userToken, isAccess);
+
+    if (dbTokenData.size() == 0) {
+        json["message"] = "token is invalid";
+        return std::pair(false, dbTokenData);
+    }
+
+    int tokenCreateTime = stoi(pqxx::to_string(dbTokenData[0]["create_time"]));
+    if (time(nullptr) - tokenCreateTime >= 3600 && isAccess == "t") {
+        json["meassage"] = "token expired";
+        return std::pair(false, dbTokenData);
+    }
+
+    return std::pair(true, dbTokenData);
 }

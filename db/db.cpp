@@ -28,8 +28,13 @@ result getUserForAuthentication(std::string email) {
 }
 
 
-result getToken(std::string userId, std::string isAccess) {
-    return worker.exec("SELECT id, value FROM tokens WHERE user_id=\'" + userId + "\' AND is_access=\'" + isAccess +"\'");
+result getTokenByUserId(std::string userId, std::string isAccess) {
+    return worker.exec("SELECT * FROM tokens WHERE user_id=\'" + userId + "\' AND is_access=\'" + isAccess +"\'");
+}
+
+
+result getTokenByValue(std::string value, std::string isAccess) {
+    return worker.exec("SELECT * FROM tokens WHERE value=\'" + value +  "\' AND is_access=\'" + isAccess +"\'");
 }
 
 
@@ -41,4 +46,9 @@ void saveToken(std::string value, std::string userId, std::string isAccess, std:
 
 void updateToken(std::string id, std::string value, std::string createTime) {
     worker.exec("UPDATE tokens SET value=\'" + value + "\', create_time=\'" + createTime +"\' WHERE id=\'" + id +"\'");
+}
+
+
+void deleteTokens(std::string userId) {
+    worker.exec("DELETE FROM tokens WHERE user_id=\'" + userId + "\'");
 }
