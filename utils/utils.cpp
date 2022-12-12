@@ -21,6 +21,7 @@ void createJsonBody(Json::Value &json, rowsView data) {
         Json::Value objJson;
         createJsonForRow(objJson, obj);
         json.append(objJson);
+        
     }
 }
 
@@ -128,6 +129,32 @@ std::map<std::string, std::string> authorizeUser(std::string userToken, std::str
     }
 
     userData = {{"user_id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
-    createObjFromDb(userData, dbTokenAndUserData[0]);
-    return userData;
+    return createObjFromDb(userData, dbTokenAndUserData[0]);;
+}
+
+
+userAndResponse processAuthorizations(const drogon::HttpRequestPtr &request, Json::Value jsonBody) {
+    std::map<std::string, std::string> user;
+
+    std::string userToken = request->getHeader("authorization");
+    if (userToken.empty()) {
+        jsonBody["message"] = "header \'authorization\' is required";
+        return std::pair(user, processResponse(request, jsonBody, drogon::HttpStatusCode::k400BadRequest));
+    }
+
+    user = authorizeUser(userToken.substr(7, 64), "t", jsonBody);
+    if (user.size() == 0) {
+        return std::pair(user, processResponse(request, jsonBody, drogon::HttpStatusCode::k400BadRequest));
+    }
+
+    return std::pair(user, drogon::HttpResponse::newHttpResponse());
+}
+
+
+void updateDataInRowView(rowView &old, rowView new_) {
+    for (auto pair : new_) {
+        if (pair.second != "") {
+            old[pair.first] = pair.second;
+        } 
+    }
 }

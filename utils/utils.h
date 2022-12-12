@@ -8,6 +8,7 @@
 typedef std::function<void(const drogon::HttpResponsePtr &)> Callback;
 typedef std::vector<std::map<std::string, std::string>> rowsView;
 typedef std::map<std::string, std::string> rowView;
+typedef std::pair<std::map<std::string, std::string>, drogon::HttpResponsePtr> userAndResponse;
 
 
 void printRequestInfo(drogon::HttpRequestPtr request, drogon::HttpStatusCode status);
@@ -35,3 +36,7 @@ std::map<std::string, std::string> authorizeUser(std::string userToken, std::str
 rowView createObjFromDb(rowView objData, pqxx::row dbRow);
 
 rowsView createObjsFromDb(rowView objData, pqxx::result dbData);
+
+userAndResponse processAuthorizations(const drogon::HttpRequestPtr &request, Json::Value jsonBody);
+
+void updateDataInRowView(rowView &old, rowView new_);

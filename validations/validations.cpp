@@ -1,4 +1,5 @@
 #include "validations.h"
+#include <iostream>
 
 typedef std::function<bool(std::string)> checkFunction;
 
@@ -18,6 +19,15 @@ bool processTheDataFromTheRequest(std::map<std::string, std::string> &data,
 }
 
 
+void processTheDataFromTheRequest(std::map<std::string, std::string> &data, std::shared_ptr<Json::Value> requestBody) {
+    for (auto &pair : data) {
+        if (requestBody->isMember(pair.first)) {
+            pair.second = requestBody->get(pair.first, "").asString();
+        }
+    }
+}
+
+
 bool isValidUsername(std::string username) {
     return std::regex_match(username, std::regex("\\S{3,}"));
 }
@@ -33,7 +43,7 @@ bool isValidPassword(std::string password) {
 }
 
 
-bool isValidUserCreateData(std::map<std::string, std::string> userData, Json::Value &json) {
+bool isValidUserCreateOrUpdateData(std::map<std::string, std::string> userData, Json::Value &json) {
     std::map<std::string, checkFunction> functions = {{"username", &isValidUsername}, 
                                                       {"email", &isValidEmail}, 
                                                       {"password", &isValidPassword}};

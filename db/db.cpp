@@ -11,7 +11,7 @@ result getAllUsers() {
 
 
 result getUserById(std::string userId) {
-    return worker.exec("SELECT id, username, email, is_admin FROM users WHERE id=\'" + userId + "\'");
+    return worker.exec("SELECT id, username, email, password, is_admin FROM users WHERE id=\'" + userId + "\'");
 }
 
 
@@ -20,16 +20,31 @@ result getUserByEmail(std::string email) {
 }
 
 
-bool tryToCreateUser(std::string username, std::string email, std::string password, std::string &exceptionText) {
+bool tryToChangeUser(std::string query, std::string &exceptionText) {
     try {
-        worker.exec("INSERT INTO users (username, email, password, is_admin) VALUES (\'" 
-                    + username + "\', \'" + email + "\', \'" + password + "\', \'f\')");
+        worker.exec(query);
         return true;
     }
     catch (pqxx::unique_violation &e) {
         exceptionText = e.what();
         return false;
     }
+}
+
+
+bool tryToCreateUser(std::string username, std::string email, std::string password, std::string &exceptionText) {
+    return tryToChangeUser("INSERT INTO users (username, email, password, is_admin) VALUES (\'" 
+                            + username + "\', \'" + email + "\', \'" + password + "\', \'f\')", 
+                            exceptionText);
+}
+
+
+bool tryToUpdateUser(std::string id, std::string username, std::string email, 
+                     std::string password, std::string isAdmin, std::string &exceptionText) {
+    return tryToChangeUser("UPDATE users SET username=\'" + username +"\', email=\'" + email + 
+                           "\', password=\'" + password + "\', is_admin=\'" + isAdmin + 
+                           "\' WHERE id=\'" + id + "\'",
+                           exceptionText);
 }
 
 
@@ -40,7 +55,7 @@ result getTokenByUserId(std::string userId, std::string isAccess) {
 
 result getTokenAndUserByValue(std::string value, std::string isAccess) {
     return worker.exec("SELECT t.id, t.value, t.is_access, t.create_time, u.id AS user_id, u.username, "
-                       "u.email, u.is_admin FROM tokens AS t JOIN users AS u ON t.user_id = u.id"
+                       "u.email, u.is_admin FROM tokens AS t JOIN users AS u ON t.user_id = u.id "
                        "WHERE t.value=\'" + value +  "\' AND t.is_access=\'" + isAccess +"\'");
 }
 

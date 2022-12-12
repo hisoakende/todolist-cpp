@@ -1,22 +1,22 @@
 #include "db/db.h"
 #include "utils/utils.h"
 #include "validations/validations.h"
-#include <iostream>
-#include <map>
-#include <pqxx/pqxx>
-#include <drogon/drogon.h>
 
 using namespace drogon;
 
 typedef std::function<void(const HttpResponsePtr &)> Callback;
-typedef std::vector<std::map<std::string, std::string>> rowsView;
-typedef std::map<std::string, std::string> rowView;
+typedef std::pair<std::map<std::string, std::string>, HttpResponsePtr> userAndResponse;
 
 
 void userView(const HttpRequestPtr &request, Callback &&callback, std::string userId) {
     Json::Value jsonBody;
-    result userFromDb = getUserById(userId);
+    userAndResponse auth = processAuthorizations(request, jsonBody);
 
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    result userFromDb = getUserById(userId);
     if (userFromDb.size() == 0) {
         jsonBody["message"] = "user id is invalid";
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
@@ -24,14 +24,84 @@ void userView(const HttpRequestPtr &request, Callback &&callback, std::string us
 
     rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
     rowView processedUser = createObjFromDb(userSchema, userFromDb[0]);
+    if (auth.first["is_admin"] == "f" && auth.first["user_id"] != processedUser["id"]) {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
     createJsonForRow(jsonBody, processedUser);
 
     callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
 }
 
 
+void updateUserView(const HttpRequestPtr &request, Callback &&callback, std::string userId) {
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    result userFromDb = getUserById(userId);
+    if (userFromDb.size() == 0) {
+        jsonBody["message"] = "user id is invalid";
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    rowView userSchema = {{"username", ""}, {"email", ""}, {"password", ""}, {"is_admin", ""}};
+    rowView processedUser = createObjFromDb(userSchema, userFromDb[0]);
+    std::string userIsAdmin = processedUser["is_admin"];
+    std::string userPassword = processedUser["password"];
+    processedUser.erase("is_admin");
+
+    if (auth.first["is_admin"] == "f" && auth.first["user_id"] != processedUser["id"]) {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
+    std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
+    if (requestBody == nullptr || requestBody->size() == 0) {
+        return callback(processTheResponseIfRequestBodyIsEmpty());
+    }
+
+    rowView userData = {{"username", ""}, {"email", ""}, {"password", ""}};
+    processTheDataFromTheRequest(userData, requestBody);
+    updateDataInRowView(processedUser, userData);
+
+    if (userPassword == processedUser["password"]) {
+        processedUser.erase("password");
+    }
+
+    if (!isValidUserCreateOrUpdateData(processedUser, jsonBody)) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    if (processedUser.find("password") != processedUser.end()) {
+        userPassword = getHashedString(processedUser["password"]);
+    } 
+
+    std::string uniqueViolationText;
+    bool userIsUpdated = tryToUpdateUser(userId, processedUser["username"], 
+                                         processedUser["email"], userPassword, userIsAdmin, uniqueViolationText);
+    if (!userIsUpdated) {
+        processUniqueViolationTextForUserCreation(uniqueViolationText, jsonBody);
+        callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+    callback(processResponse(request, HttpStatusCode::k204NoContent));
+}
+
+
 void usersView(const HttpRequestPtr &request, Callback &&callback) {
     Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    if (auth.first["is_admin"] == "f") {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
     rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
     
     result usersFromDb = getAllUsers();
@@ -45,7 +115,7 @@ void usersView(const HttpRequestPtr &request, Callback &&callback) {
 void createUserView(const HttpRequestPtr &request, Callback &&callback) {
     std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
 
-    if (requestBody == nullptr) {
+    if (requestBody == nullptr || requestBody->size() == 0) {
         return callback(processTheResponseIfRequestBodyIsEmpty());
     }
 
@@ -53,7 +123,7 @@ void createUserView(const HttpRequestPtr &request, Callback &&callback) {
     std::map<std::string, std::string> userData = {{"username", ""}, {"email", ""}, {"password", ""}};
     bool requestIsNormal = processTheDataFromTheRequest(userData, jsonBody, requestBody);
 
-    if (!requestIsNormal || !isValidUserCreateData(userData, jsonBody)) {
+    if (!requestIsNormal || !isValidUserCreateOrUpdateData(userData, jsonBody)) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
     
@@ -62,19 +132,17 @@ void createUserView(const HttpRequestPtr &request, Callback &&callback) {
 
     if (!tryToCreateUser(userData["username"], userData["email"], getHashedString(userData["password"]), uniqueViolationText)) {
         processUniqueViolationTextForUserCreation(uniqueViolationText, jsonBody);
-        response = processResponse(request, jsonBody, HttpStatusCode::k400BadRequest);
-    } else {
-        response = processResponse(request, HttpStatusCode::k201Created);
+        callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
     
-    callback(response);
+    callback(processResponse(request, HttpStatusCode::k201Created));
 }
 
 
 void authenticationView(const HttpRequestPtr &request, Callback &&callback) {
     std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
 
-    if (requestBody == nullptr) {
+    if (requestBody == nullptr || requestBody->size() == 0) {
         return callback(processTheResponseIfRequestBodyIsEmpty());
     }
 
@@ -107,19 +175,13 @@ void authenticationView(const HttpRequestPtr &request, Callback &&callback) {
 
 void logoutView(const HttpRequestPtr &request, Callback &&callback) {
     Json::Value jsonBody;
-    std::string userToken = request->getHeader("authorization");
-    
-    if (userToken.empty()) {
-        jsonBody["message"] = "header \'authorization\' is required";
-        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
     }
 
-    std::map<std::string, std::string> user = authorizeUser(userToken.substr(7, 64), "t", jsonBody);
-    if (user.size() == 0) {
-        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
-    }
-
-    deleteTokens(user["user_id"]);
+    deleteTokens(auth.first["user_id"]);
     callback(processResponse(request, HttpStatusCode::k200OK));
 }
 
@@ -127,8 +189,9 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
 int main() {
     app()
          .registerHandler("/api/users/{user_id}/", &userView, {Get}) // for owners and admins
+         .registerHandler("/api/users/{user_id}/", &updateUserView, {Patch}) // for owners and admins
          .registerHandler("/api/users/", &usersView, {Get}) // for admins
-         .registerHandler("/api/users/create_user/", &createUserView, {Post}) // for all
+         .registerHandler("/api/users/", &createUserView, {Post}) // for all
          .registerHandler("/api/users/authentication/", &authenticationView, {Post}) // for all
          .registerHandler("/api/users/logout/", &logoutView, {Get}) // for all
          .loadConfigFile("../config.json")
