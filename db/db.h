@@ -6,13 +6,15 @@ using namespace pqxx;
 
 result getAllUsers();
 
-bool tryToCreateUser(std::string username, std::string email, std::string password, std::string &exceptionText);
+result getUserByEmail(std::string email);
 
-result getUserForAuthentication(std::string email);
+result getUserById(std::string userId);
+
+bool tryToCreateUser(std::string username, std::string email, std::string password, std::string &exceptionText);
 
 result getTokenByUserId(std::string userId, std::string isAccess);
 
-result getTokenByValue(std::string value, std::string isAccess);
+result getTokenAndUserByValue(std::string value, std::string isAccess);
 
 void saveToken(std::string value, std::string userId, std::string isAccess, std::string createTime);
 

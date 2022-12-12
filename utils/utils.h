@@ -1,17 +1,20 @@
 #pragma once
 #include "../db/db.h"
-#include <iostream>
+#include <map>
 #include <pqxx/pqxx>
 #include <drogon/drogon.h>
 #include <openssl/sha.h>
 
-
 typedef std::function<void(const drogon::HttpResponsePtr &)> Callback;
+typedef std::vector<std::map<std::string, std::string>> rowsView;
+typedef std::map<std::string, std::string> rowView;
 
 
 void printRequestInfo(drogon::HttpRequestPtr request, drogon::HttpStatusCode status);
 
-void createJsonBody(Json::Value &json, pqxx::result &data);
+void createJsonForRow(Json::Value &json, rowView obj);
+
+void createJsonBody(Json::Value &json, rowsView data);
 
 drogon::HttpResponsePtr processTheResponseIfRequestBodyIsEmpty();
 
@@ -27,4 +30,8 @@ drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, Json::Va
 
 drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, drogon::HttpStatusCode status);
 
-std::pair<bool, pqxx::result> getTokenData(std::string userToken, std::string isAccess, Json::Value &json);
+std::map<std::string, std::string> authorizeUser(std::string userToken, std::string isAccess, Json::Value &json);
+
+rowView createObjFromDb(rowView objData, pqxx::row dbRow);
+
+rowsView createObjsFromDb(rowView objData, pqxx::result dbData);

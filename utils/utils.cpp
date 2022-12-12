@@ -8,20 +8,18 @@ void printRequestInfo(drogon::HttpRequestPtr request, drogon::HttpStatusCode sta
 
 
 // Create json for one tuple
-void createJsonForRow(pqxx::row &row, Json::Value &objJson) {
-    for (auto field : row) {
-        if (pqxx::to_string(field.name()) != "password") {
-            objJson[field.name()] = pqxx::to_string(field);
-        }
+void createJsonForRow(Json::Value &json, rowView obj) {
+    for (auto field : obj) {
+        json[field.first] = field.second;
     }
 }
 
 
 // Create json for all tuples
-void createJsonBody(Json::Value &json, pqxx::result &data) {
-    for (auto row : data) {
+void createJsonBody(Json::Value &json, rowsView data) {
+    for (auto obj : data) {
         Json::Value objJson;
-        createJsonForRow(row, objJson);
+        createJsonForRow(objJson, obj);
         json.append(objJson);
     }
 }
@@ -97,19 +95,39 @@ drogon::HttpResponsePtr processResponse(drogon::HttpRequestPtr request, drogon::
 }
 
 
-std::pair<bool, pqxx::result> getTokenData(std::string userToken, std::string isAccess, Json::Value &json) {
-    pqxx::result dbTokenData = getTokenByValue(userToken, isAccess);
+rowView createObjFromDb(rowView objData, pqxx::row dbRow) {
+    for (auto &pair : objData) {
+        pair.second = pqxx::to_string(dbRow[pair.first]);
+    }
+    return objData;
+}
 
-    if (dbTokenData.size() == 0) {
+
+rowsView createObjsFromDb(rowView objData, pqxx::result dbData) {
+    rowsView r;
+    for (auto row : dbData) {
+        r.push_back(createObjFromDb(objData, row));
+    }
+    return r;
+}
+
+
+std::map<std::string, std::string> authorizeUser(std::string userToken, std::string isAccess, Json::Value &json) {
+    pqxx::result dbTokenAndUserData = getTokenAndUserByValue(userToken, isAccess);
+    std::map<std::string, std::string> userData;
+
+    if (dbTokenAndUserData.size() == 0) {
         json["message"] = "token is invalid";
-        return std::pair(false, dbTokenData);
+        return userData;
     }
 
-    int tokenCreateTime = stoi(pqxx::to_string(dbTokenData[0]["create_time"]));
+    int tokenCreateTime = stoi(pqxx::to_string(dbTokenAndUserData[0]["create_time"]));
     if (time(nullptr) - tokenCreateTime >= 3600 && isAccess == "t") {
-        json["meassage"] = "token expired";
-        return std::pair(false, dbTokenData);
+        json["message"] = "token expired";
+        return userData;
     }
 
-    return std::pair(true, dbTokenData);
+    userData = {{"user_id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
+    createObjFromDb(userData, dbTokenAndUserData[0]);
+    return userData;
 }

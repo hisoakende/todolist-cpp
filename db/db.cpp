@@ -6,7 +6,17 @@ nontransaction worker(conn);
 
 
 result getAllUsers() {
-    return worker.exec("SELECT * FROM users");
+    return worker.exec("SELECT id, username, email, is_admin FROM users");
+}
+
+
+result getUserById(std::string userId) {
+    return worker.exec("SELECT id, username, email, is_admin FROM users WHERE id=\'" + userId + "\'");
+}
+
+
+result getUserByEmail(std::string email) {
+    return worker.exec("SELECT id, password FROM users WHERE email=\'" + email + "\'");
 }
 
 
@@ -23,18 +33,15 @@ bool tryToCreateUser(std::string username, std::string email, std::string passwo
 }
 
 
-result getUserForAuthentication(std::string email) {
-    return worker.exec("SELECT id, password FROM users WHERE email=\'" + email + "\'");
-}
-
-
 result getTokenByUserId(std::string userId, std::string isAccess) {
     return worker.exec("SELECT * FROM tokens WHERE user_id=\'" + userId + "\' AND is_access=\'" + isAccess +"\'");
 }
 
 
-result getTokenByValue(std::string value, std::string isAccess) {
-    return worker.exec("SELECT * FROM tokens WHERE value=\'" + value +  "\' AND is_access=\'" + isAccess +"\'");
+result getTokenAndUserByValue(std::string value, std::string isAccess) {
+    return worker.exec("SELECT t.id, t.value, t.is_access, t.create_time, u.id AS user_id, u.username, "
+                       "u.email, u.is_admin FROM tokens AS t JOIN users AS u ON t.user_id = u.id"
+                       "WHERE t.value=\'" + value +  "\' AND t.is_access=\'" + isAccess +"\'");
 }
 
 

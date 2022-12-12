@@ -1,20 +1,43 @@
 #include "db/db.h"
 #include "utils/utils.h"
 #include "validations/validations.h"
+#include <iostream>
 #include <map>
 #include <pqxx/pqxx>
 #include <drogon/drogon.h>
-#include <openssl/sha.h>
 
 using namespace drogon;
 
 typedef std::function<void(const HttpResponsePtr &)> Callback;
+typedef std::vector<std::map<std::string, std::string>> rowsView;
+typedef std::map<std::string, std::string> rowView;
 
 
-void usersViewGet(const HttpRequestPtr &request, Callback &&callback) {
+void userView(const HttpRequestPtr &request, Callback &&callback, std::string userId) {
     Json::Value jsonBody;
-    result users = getAllUsers();
-    createJsonBody(jsonBody, users);
+    result userFromDb = getUserById(userId);
+
+    if (userFromDb.size() == 0) {
+        jsonBody["message"] = "user id is invalid";
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
+    rowView processedUser = createObjFromDb(userSchema, userFromDb[0]);
+    createJsonForRow(jsonBody, processedUser);
+
+    callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
+}
+
+
+void usersView(const HttpRequestPtr &request, Callback &&callback) {
+    Json::Value jsonBody;
+    rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
+    
+    result usersFromDb = getAllUsers();
+    rowsView processedUsers = createObjsFromDb(userSchema, usersFromDb);
+    createJsonBody(jsonBody, processedUsers);
+
   	callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
 }
 
@@ -63,7 +86,7 @@ void authenticationView(const HttpRequestPtr &request, Callback &&callback) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
 
-    result user = getUserForAuthentication(data["email"]);
+    result user = getUserByEmail(data["email"]);
     
     if (user.size() == 0) {
         jsonBody["message"] = "no such user exists";
@@ -91,22 +114,23 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
 
-    std::pair<bool, pqxx::result> tokenData = getTokenData(userToken.substr(7, 64), "t", jsonBody);
-    if (!tokenData.first) {
+    std::map<std::string, std::string> user = authorizeUser(userToken.substr(7, 64), "t", jsonBody);
+    if (user.size() == 0) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
 
-    deleteTokens(pqxx::to_string(tokenData.second[0]["user_id"]));
+    deleteTokens(user["user_id"]);
     callback(processResponse(request, HttpStatusCode::k200OK));
 }
 
 
 int main() {
     app()
-         .registerHandler("/api/users/", &usersViewGet, {Get})
-         .registerHandler("/api/users/create_user/", &createUserView, {Post})
-         .registerHandler("/api/users/authentication/", &authenticationView, {Post})
-         .registerHandler("/api/users/logout/", &logoutView, {Get})
+         .registerHandler("/api/users/{user_id}/", &userView, {Get}) // for owners and admins
+         .registerHandler("/api/users/", &usersView, {Get}) // for admins
+         .registerHandler("/api/users/create_user/", &createUserView, {Post}) // for all
+         .registerHandler("/api/users/authentication/", &authenticationView, {Post}) // for all
+         .registerHandler("/api/users/logout/", &logoutView, {Get}) // for all
          .loadConfigFile("../config.json")
          .run();
     return 0;
