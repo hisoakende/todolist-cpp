@@ -24,3 +24,7 @@ void saveToken(std::string value, std::string userId, std::string isAccess, std:
 void updateToken(std::string id, std::string value, std::string createTime);
 
 void deleteTokens(std::string userId);
+
+result getAllCategories();
+
+result getCategory(std::string categoryId);

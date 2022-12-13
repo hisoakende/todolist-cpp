@@ -1,9 +1,6 @@
 #include "validations.h"
 #include <iostream>
 
-typedef std::function<bool(std::string)> checkFunction;
-
-
 bool processTheDataFromTheRequest(std::map<std::string, std::string> &data, 
                                   Json::Value &json, std::shared_ptr<Json::Value> requestBody) {
     bool dataIsNormal = true;
@@ -55,4 +52,20 @@ bool isValidUserCreateOrUpdateData(std::map<std::string, std::string> userData, 
         }
     }
     return isValidData;
+}
+
+
+bool checkQueryParam(std::string param, Json::Value &json, pqxx::result &data, getDataFunction func) {
+    if (param.find_first_not_of("0123456789") != std::string::npos || param == "") {
+        json["message"] = "id is invalid";
+        return false;
+    }
+
+    data = func(param);
+    if (data.size() == 0) {
+        json["message"] = "id is invalid";
+        return false;
+    }
+
+    return true;
 }

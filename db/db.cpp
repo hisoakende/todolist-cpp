@@ -74,3 +74,12 @@ void updateToken(std::string id, std::string value, std::string createTime) {
 void deleteTokens(std::string userId) {
     worker.exec("DELETE FROM tokens WHERE user_id=\'" + userId + "\'");
 }
+
+
+result getAllCategories() {
+    return worker.exec("SELECT * FROM categories");
+}
+
+result getCategory(std::string categoryId) {
+    return worker.exec("SELECT * FROM categories WHERE id=\'" + categoryId +"\'");
+}
