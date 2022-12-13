@@ -1,5 +1,6 @@
 #include "users/users.h"
 #include "categories/categories.h"
+#include "notes/notes.h"
 
 #include "db/db.h"
 #include "utils/utils.h"
@@ -60,6 +61,12 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
 
 int main() {
     app()
+         .registerHandler("/api/notes/{notes_id}/", &noteView, {Get}) // for owners and admins
+        //  .registerHandler("/api/notes/{notes_id}/", &, {Delete}) // for owners and admins
+        //  .registerHandler("/api/notes/{notes_id}/", &, {Put})  // for owners and admins
+        //  .registerHandler("/api/notes/", &, {Get}) // for owners and admins
+        //  .registerHandler("/api/notes/", &, {Post}) // for auth
+
          .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for auth
          .registerHandler("/api/categories/{category_id}/", &deleteCategoryView, {Delete}) // for admins
          .registerHandler("/api/categories/{category_id}/", &updateCategoryView, {Put})  // for admins

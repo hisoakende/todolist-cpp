@@ -40,3 +40,5 @@ rowsView createObjsFromDb(rowView objData, pqxx::result dbData);
 userAndResponse processAuthorizations(const drogon::HttpRequestPtr &request, Json::Value jsonBody);
 
 void updateDataInRowView(rowView &old, rowView new_);
+
+void replaceRelatedNoteFieldsInObj(Json::Value &json);

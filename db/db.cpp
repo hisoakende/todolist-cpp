@@ -99,3 +99,8 @@ void deleteCategory(std::string id) {
 void updateCategory(std::string id, std::string name) {
     worker.exec("UPDATE categories SET name=\'" + name + "\' WHERE id=\'" + id +"\'");
 }
+
+
+result getNote(std::string noteId) {
+    return worker.exec("SELECT * FROM notes WHERE id=\'" + noteId +"\'");
+}

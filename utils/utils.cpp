@@ -160,3 +160,22 @@ void updateDataInRowView(rowView &old, rowView new_) {
 }
 
 
+void replaceRelatedNoteFieldsInObj(Json::Value &json) {
+    pqxx::result userFromDb = getUserById(json["author_id"].asString());
+    json.removeMember("author_id");
+
+    rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
+    rowView processedUser = createObjFromDb(userSchema, userFromDb[0]);
+    Json::Value authorJson;
+    createJsonForRow(authorJson, processedUser);
+    json["author"] = authorJson;
+
+    pqxx::result categoryFromDb = getCategory(json["category_id"].asString());
+    json.removeMember("category_id");
+
+    rowView categorySchema = {{"id", ""}, {"name", ""}};
+    rowView processedCategory = createObjFromDb(categorySchema, categoryFromDb[0]);
+    Json::Value categoryJson;
+    createJsonForRow(categoryJson, processedCategory);
+    json["category"] = categoryJson;
+}

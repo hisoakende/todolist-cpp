@@ -34,3 +34,5 @@ void createCategory(std::string name);
 void deleteCategory(std::string id);
 
 void updateCategory(std::string id, std::string name);
+
+result getNote(std::string noteId);
