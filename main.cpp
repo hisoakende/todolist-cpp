@@ -65,7 +65,7 @@ int main() {
          .registerHandler("/api/notes/{notes_id}/", &deleteNoteView, {Delete}) // for owners and admins
         //  .registerHandler("/api/notes/{notes_id}/", &, {Put})  // for owners and admins
          .registerHandler("/api/notes/", &notesView, {Get}) // for owners and admins
-        //  .registerHandler("/api/notes/", &, {Post}) // for auth
+         .registerHandler("/api/notes/", &createNoteView, {Post}) // for auth
 
          .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for auth
          .registerHandler("/api/categories/{category_id}/", &deleteCategoryView, {Delete}) // for admins

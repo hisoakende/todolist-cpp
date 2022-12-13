@@ -1,8 +1,7 @@
 #include "validations.h"
 #include <iostream>
 
-bool processTheDataFromTheRequest(std::map<std::string, std::string> &data, 
-                                  Json::Value &json, std::shared_ptr<Json::Value> requestBody) {
+bool processTheDataFromTheRequest(rowView &data, Json::Value &json, std::shared_ptr<Json::Value> requestBody) {
     bool dataIsNormal = true;
     for (auto &pair : data) {
         if (requestBody->isMember(pair.first)) {
@@ -16,7 +15,7 @@ bool processTheDataFromTheRequest(std::map<std::string, std::string> &data,
 }
 
 
-void processTheDataFromTheRequest(std::map<std::string, std::string> &data, std::shared_ptr<Json::Value> requestBody) {
+void processTheDataFromTheRequest(rowView &data, std::shared_ptr<Json::Value> requestBody) {
     for (auto &pair : data) {
         if (requestBody->isMember(pair.first)) {
             pair.second = requestBody->get(pair.first, "").asString();
@@ -40,10 +39,7 @@ bool isValidPassword(std::string password) {
 }
 
 
-bool isValidUserCreateOrUpdateData(std::map<std::string, std::string> userData, Json::Value &json) {
-    std::map<std::string, checkFunction> functions = {{"username", &isValidUsername}, 
-                                                      {"email", &isValidEmail}, 
-                                                      {"password", &isValidPassword}};
+bool runFunctions(rowView userData, Json::Value &json, std::map<std::string, checkFunction> functions) {
     bool isValidData = true;
     for (auto field : userData) {
         if (!functions[field.first](field.second)) {
@@ -52,6 +48,14 @@ bool isValidUserCreateOrUpdateData(std::map<std::string, std::string> userData, 
         }
     }
     return isValidData;
+}
+
+
+bool isValidUserCreateOrUpdateData(rowView userData, Json::Value &json) {
+    std::map<std::string, checkFunction> functions = {{"username", &isValidUsername}, 
+                                                      {"email", &isValidEmail}, 
+                                                      {"password", &isValidPassword}};
+    return runFunctions(userData, json, functions);
 }
 
 
@@ -68,4 +72,27 @@ bool checkQueryParam(std::string param, Json::Value &json, pqxx::result &data, g
     }
 
     return true;
+}
+
+
+bool isValidTitle(std::string value) {
+    return value.size() <= 255;
+}
+
+
+bool isValidText(std::string value) {
+    return true;
+}
+
+
+bool isValidCategoryId(std::string value) {
+    return getCategory(value).size() != 0;
+}
+
+
+bool checkNoteDataFromRequest(rowView noteData, Json::Value &json) {
+    std::map<std::string, checkFunction> functions = {{"title", &isValidTitle}, 
+                                                      {"text", &isValidText}, 
+                                                      {"category_id", &isValidCategoryId}};
+    return runFunctions(noteData, json, functions);
 }

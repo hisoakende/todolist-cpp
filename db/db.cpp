@@ -119,3 +119,9 @@ result getNotesByAuthor(std::string authorId) {
 void deleteNote(std::string noteId) {
     worker.exec("DELETE FROM notes WHERE id=\'" + noteId + "\'");
 }
+
+
+void createNote(std::string title, std::string text, std::string author_id, std::string category_id) {
+    worker.exec("INSERT INTO notes (title, text, author_id, category_id) VALUES (\'" 
+                            + title + "\', \'" + text + "\', " + author_id + ", " + category_id + ")");
+}

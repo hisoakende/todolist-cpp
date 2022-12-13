@@ -76,3 +76,27 @@ void deleteNoteView(const HttpRequestPtr &request, Callback &&callback, std::str
 
     callback(processResponse(request, HttpStatusCode::k204NoContent));
 }
+
+
+void createNoteView(const HttpRequestPtr &request, Callback &&callback) {
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
+    if (requestBody == nullptr || requestBody->size() == 0) {
+        return callback(processTheResponseIfRequestBodyIsEmpty());
+    }
+
+    rowView noteData = {{"title", ""}, {"text", ""}, {"category_id", ""}};
+    bool requestIsNormal = processTheDataFromTheRequest(noteData, jsonBody, requestBody);
+    if (!requestIsNormal || !checkNoteDataFromRequest(noteData, jsonBody)) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    createNote(noteData["title"], noteData["text"], auth.first["user_id"], noteData["category_id"]);
+    callback(processResponse(request, HttpStatusCode::k201Created));
+}
