@@ -60,14 +60,16 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
 
 int main() {
     app()
-         .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for all
-         .registerHandler("/api/categories/", &categoriesView, {Get}) // for all
+         .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for auth
+         .registerHandler("/api/categories/{category_id}/", &deleteCategoryView, {Delete}) // for admins
+         .registerHandler("/api/categories/", &categoriesView, {Get}) // for auth
+         .registerHandler("/api/categories/", &createCategoryView, {Post}) // for auth
          .registerHandler("/api/users/{user_id}/", &userView, {Get}) // for owners and admins
          .registerHandler("/api/users/{user_id}/", &updateUserView, {Patch}) // for owners and admins
          .registerHandler("/api/users/", &usersView, {Get}) // for admins
          .registerHandler("/api/users/", &createUserView, {Post}) // for all
          .registerHandler("/api/authentication/", &authenticationView, {Post}) // for all
-         .registerHandler("/api/logout/", &logoutView, {Get}) // for all
+         .registerHandler("/api/logout/", &logoutView, {Get}) // for auth
          .loadConfigFile("../config.json")
          .run();
     return 0;

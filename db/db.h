@@ -28,3 +28,7 @@ void deleteTokens(std::string userId);
 result getAllCategories();
 
 result getCategory(std::string categoryId);
+
+void createCategory(std::string name);
+
+void deleteCategory(std::string id);

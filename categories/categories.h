@@ -17,3 +17,7 @@ typedef std::map<std::string, std::string> rowView;
 void categoryView(const HttpRequestPtr &request, Callback &&callback, std::string categoryId);
 
 void categoriesView(const HttpRequestPtr &request, Callback &&callback);
+
+void createCategoryView(const HttpRequestPtr &request, Callback &&callback);
+
+void deleteCategoryView(const HttpRequestPtr &request, Callback &&callback, std::string categoryId);

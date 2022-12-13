@@ -80,6 +80,17 @@ result getAllCategories() {
     return worker.exec("SELECT * FROM categories");
 }
 
+
 result getCategory(std::string categoryId) {
     return worker.exec("SELECT * FROM categories WHERE id=\'" + categoryId +"\'");
+}
+
+
+void createCategory(std::string name) {
+    worker.exec("INSERT INTO categories (name) VALUES (\'" + name + "\')");
+}
+
+
+void deleteCategory(std::string id) {
+    worker.exec("DELETE FROM categories WHERE id=\'" + id + "\'");
 }

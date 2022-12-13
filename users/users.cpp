@@ -13,7 +13,7 @@ void userView(const HttpRequestPtr &request, Callback &&callback, std::string us
     if (!checkQueryParam(userId, jsonBody, userFromDb, getUserById)) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
-    
+
     rowView userSchema = {{"id", ""}, {"username", ""}, {"email", ""}, {"is_admin", ""}};
     rowView processedUser = createObjFromDb(userSchema, userFromDb[0]);
     if (auth.first["is_admin"] == "f" && auth.first["user_id"] != processedUser["id"]) {
@@ -111,7 +111,7 @@ void createUserView(const HttpRequestPtr &request, Callback &&callback) {
     }
 
     Json::Value jsonBody;
-    std::map<std::string, std::string> userData = {{"username", ""}, {"email", ""}, {"password", ""}};
+    rowView userData = {{"username", ""}, {"email", ""}, {"password", ""}};
     bool requestIsNormal = processTheDataFromTheRequest(userData, jsonBody, requestBody);
 
     if (!requestIsNormal || !isValidUserCreateOrUpdateData(userData, jsonBody)) {
