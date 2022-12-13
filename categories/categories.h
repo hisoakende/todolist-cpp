@@ -21,3 +21,5 @@ void categoriesView(const HttpRequestPtr &request, Callback &&callback);
 void createCategoryView(const HttpRequestPtr &request, Callback &&callback);
 
 void deleteCategoryView(const HttpRequestPtr &request, Callback &&callback, std::string categoryId);
+
+void updateCategoryView(const HttpRequestPtr &request, Callback &&callback, std::string categoryId);

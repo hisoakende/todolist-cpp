@@ -62,6 +62,7 @@ int main() {
     app()
          .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for auth
          .registerHandler("/api/categories/{category_id}/", &deleteCategoryView, {Delete}) // for admins
+         .registerHandler("/api/categories/{category_id}/", &updateCategoryView, {Put})  // for admins
          .registerHandler("/api/categories/", &categoriesView, {Get}) // for auth
          .registerHandler("/api/categories/", &createCategoryView, {Post}) // for auth
          .registerHandler("/api/users/{user_id}/", &userView, {Get}) // for owners and admins

@@ -32,3 +32,5 @@ result getCategory(std::string categoryId);
 void createCategory(std::string name);
 
 void deleteCategory(std::string id);
+
+void updateCategory(std::string id, std::string name);

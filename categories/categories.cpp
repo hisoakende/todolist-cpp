@@ -74,8 +74,46 @@ void deleteCategoryView(const HttpRequestPtr &request, Callback &&callback, std:
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     }
 
-    rowView category = {{"id", ""}, {"name", ""}};
+    if (auth.first["is_admin"] == "f") {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
+    rowView category = {{"id", ""}};
     rowView processedCategory = createObjFromDb(category, categoryFromBd[0]);
     deleteCategory(processedCategory["id"]);
+
+    callback(processResponse(request, HttpStatusCode::k204NoContent));
+}
+
+
+void updateCategoryView(const HttpRequestPtr &request, Callback &&callback, std::string categoryId) {
+    result categoryFromBd;
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    if (!checkQueryParam(categoryId, jsonBody, categoryFromBd, getCategory)) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    if (auth.first["is_admin"] == "f") {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+    
+    std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
+    if (requestBody == nullptr || requestBody->size() == 0) {
+        return callback(processTheResponseIfRequestBodyIsEmpty());
+    }
+
+    rowView categoryData = {{"name", ""}};
+    bool requestIsNormal = processTheDataFromTheRequest(categoryData, jsonBody, requestBody);
+    if (!requestIsNormal || categoryData["name"] == "") {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    updateCategory(categoryId, categoryData["name"]);
+
     callback(processResponse(request, HttpStatusCode::k204NoContent));
 }

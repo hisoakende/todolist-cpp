@@ -94,3 +94,8 @@ void createCategory(std::string name) {
 void deleteCategory(std::string id) {
     worker.exec("DELETE FROM categories WHERE id=\'" + id + "\'");
 }
+
+
+void updateCategory(std::string id, std::string name) {
+    worker.exec("UPDATE categories SET name=\'" + name + "\' WHERE id=\'" + id +"\'");
+}
