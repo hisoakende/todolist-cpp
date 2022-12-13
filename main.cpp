@@ -62,7 +62,7 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
 int main() {
     app()
          .registerHandler("/api/notes/{notes_id}/", &noteView, {Get}) // for owners and admins
-        //  .registerHandler("/api/notes/{notes_id}/", &, {Delete}) // for owners and admins
+         .registerHandler("/api/notes/{notes_id}/", &deleteNoteView, {Delete}) // for owners and admins
         //  .registerHandler("/api/notes/{notes_id}/", &, {Put})  // for owners and admins
          .registerHandler("/api/notes/", &notesView, {Get}) // for owners and admins
         //  .registerHandler("/api/notes/", &, {Post}) // for auth

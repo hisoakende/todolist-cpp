@@ -110,6 +110,12 @@ result getAllNotes() {
     return worker.exec("SELECT * FROM notes");
 }
 
+
 result getNotesByAuthor(std::string authorId) {
     return worker.exec("SELECT * FROM notes WHERE author_id=" + authorId);
+}
+
+
+void deleteNote(std::string noteId) {
+    worker.exec("DELETE FROM notes WHERE id=\'" + noteId + "\'");
 }

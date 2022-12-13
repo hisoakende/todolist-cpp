@@ -40,3 +40,5 @@ result getNote(std::string noteId);
 result getAllNotes();
 
 result getNotesByAuthor(std::string authorId);
+
+void deleteNote(std::string noteId);

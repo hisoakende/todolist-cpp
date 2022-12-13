@@ -78,9 +78,7 @@ void deleteCategoryView(const HttpRequestPtr &request, Callback &&callback, std:
         return callback(processResponse(request, HttpStatusCode::k403Forbidden));
     }
 
-    rowView category = {{"id", ""}};
-    rowView processedCategory = createObjFromDb(category, categoryFromBd[0]);
-    deleteCategory(processedCategory["id"]);
+    deleteCategory(categoryId);
 
     callback(processResponse(request, HttpStatusCode::k204NoContent));
 }
@@ -101,7 +99,7 @@ void updateCategoryView(const HttpRequestPtr &request, Callback &&callback, std:
     if (auth.first["is_admin"] == "f") {
         return callback(processResponse(request, HttpStatusCode::k403Forbidden));
     }
-    
+
     std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
     if (requestBody == nullptr || requestBody->size() == 0) {
         return callback(processTheResponseIfRequestBodyIsEmpty());

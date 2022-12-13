@@ -50,3 +50,29 @@ void notesView(const HttpRequestPtr &request, Callback &&callback) {
 
     callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
 }
+
+
+void deleteNoteView(const HttpRequestPtr &request, Callback &&callback, std::string noteId) {
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    result noteFromDb;
+    if (!checkQueryParam(noteId, jsonBody, noteFromDb, getNote)) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    rowView noteSchema = {{"id", ""}, {"author_id", ""}};
+    rowView processedNote = createObjFromDb(noteSchema, noteFromDb[0]);
+
+    if (auth.first["is_admin"] == "f" && auth.first["user_id"] != processedNote["author_id"]) {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
+    deleteNote(processedNote["id"]);
+
+    callback(processResponse(request, HttpStatusCode::k204NoContent));
+}
