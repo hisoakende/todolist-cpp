@@ -125,3 +125,9 @@ void createNote(std::string title, std::string text, std::string author_id, std:
     worker.exec("INSERT INTO notes (title, text, author_id, category_id) VALUES (\'" 
                             + title + "\', \'" + text + "\', " + author_id + ", " + category_id + ")");
 }
+
+
+void updateNote(std::string noteId, std::string title, std::string text, std::string category_id) {
+    worker.exec("UPDATE notes SET title=\'" + title +"\', text=\'" + text + 
+                "\', category_id=" + category_id + " WHERE id=\'" + noteId + "\'");
+}

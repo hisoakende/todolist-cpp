@@ -39,8 +39,8 @@ void authenticationView(const HttpRequestPtr &request, Callback &&callback) {
         return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
     } 
     
-    jsonBody["refreshToken"] = processTokenHandling(to_string(user[0]["id"]), "f");
-    jsonBody["accessToken"] = processTokenHandling(to_string(user[0]["id"]), "t");
+    jsonBody["refresh_token"] = processTokenHandling(to_string(user[0]["id"]), "f");
+    jsonBody["access_token"] = processTokenHandling(to_string(user[0]["id"]), "t");
 
     callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
 }
@@ -59,14 +59,44 @@ void logoutView(const HttpRequestPtr &request, Callback &&callback) {
 }
 
 
+void refreshTokenView(const HttpRequestPtr &request, Callback &&callback) {
+    std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
+
+    if (requestBody == nullptr || requestBody->size() == 0) {
+        return callback(processTheResponseIfRequestBodyIsEmpty());
+    }
+
+    Json::Value jsonBody;
+    std::map<std::string, std::string> data = {{"refresh_token", ""}};
+    bool requestIsNormal = processTheDataFromTheRequest(data, jsonBody, requestBody);
+
+    if (!requestIsNormal) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    result tokenAndUser = getTokenAndUserByValue(data["refresh_token"], "f");
+    if (tokenAndUser.size() == 0) {
+        jsonBody["message"] = "token is invalid";
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    result oldToken = getTokenByUserId(pqxx::to_string(tokenAndUser[0]["user_id"]), "t");
+    std::string newToken = generateToken(pqxx::to_string(tokenAndUser[0]["user_id"]), "t");
+    
+    updateToken(pqxx::to_string(oldToken[0]["id"]), newToken, to_string(time(nullptr)));
+    jsonBody["access_token"] = newToken;
+
+    callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
+}
+
+
 int main() {
     app()
          .registerHandler("/api/notes/{notes_id}/", &noteView, {Get}) // for owners and admins
          .registerHandler("/api/notes/{notes_id}/", &deleteNoteView, {Delete}) // for owners and admins
-        //  .registerHandler("/api/notes/{notes_id}/", &, {Put})  // for owners and admins
+         .registerHandler("/api/notes/{notes_id}/", &updateNoteView, {Patch})  // for owners and admins
          .registerHandler("/api/notes/", &notesView, {Get}) // for owners and admins
          .registerHandler("/api/notes/", &createNoteView, {Post}) // for auth
-
          .registerHandler("/api/categories/{category_id}/", &categoryView, {Get}) // for auth
          .registerHandler("/api/categories/{category_id}/", &deleteCategoryView, {Delete}) // for admins
          .registerHandler("/api/categories/{category_id}/", &updateCategoryView, {Put})  // for admins
@@ -76,6 +106,7 @@ int main() {
          .registerHandler("/api/users/{user_id}/", &updateUserView, {Patch}) // for owners and admins
          .registerHandler("/api/users/", &usersView, {Get}) // for admins
          .registerHandler("/api/users/", &createUserView, {Post}) // for all
+         .registerHandler("/api/refresh/", &refreshTokenView, {Post})
          .registerHandler("/api/authentication/", &authenticationView, {Post}) // for all
          .registerHandler("/api/logout/", &logoutView, {Get}) // for auth
          .loadConfigFile("../config.json")

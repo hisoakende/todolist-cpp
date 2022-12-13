@@ -15,3 +15,5 @@ void notesView(const HttpRequestPtr &request, Callback &&callback);
 void deleteNoteView(const HttpRequestPtr &request, Callback &&callback, std::string noteId);
 
 void createNoteView(const HttpRequestPtr &request, Callback &&callback);
+
+void updateNoteView(const HttpRequestPtr &request, Callback &&callback, std::string noteId);

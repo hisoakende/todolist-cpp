@@ -98,5 +98,41 @@ void createNoteView(const HttpRequestPtr &request, Callback &&callback) {
     }
 
     createNote(noteData["title"], noteData["text"], auth.first["user_id"], noteData["category_id"]);
+
     callback(processResponse(request, HttpStatusCode::k201Created));
+}
+
+
+void updateNoteView(const HttpRequestPtr &request, Callback &&callback, std::string noteId) {
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    result noteFromDb;
+    if (!checkQueryParam(noteId, jsonBody, noteFromDb, getNote)) {
+        return callback(processResponse(request, jsonBody, HttpStatusCode::k400BadRequest));
+    }
+
+    rowView noteSchema = {{"title", ""}, {"text", ""}, {"category_id", ""}, {"author_id", ""}};
+    rowView processedNote = createObjFromDb(noteSchema, noteFromDb[0]);
+
+    if (auth.first["is_admin"] == "f" && auth.first["user_id"] != processedNote["author_id"]) {
+        return callback(processResponse(request, HttpStatusCode::k403Forbidden));
+    }
+
+    std::shared_ptr<Json::Value> requestBody = request->getJsonObject();
+    if (requestBody == nullptr || requestBody->size() == 0) {
+        return callback(processTheResponseIfRequestBodyIsEmpty());
+    }
+
+    rowView noteData = {{"title", ""}, {"text", ""}, {"category_id", ""}};
+    processTheDataFromTheRequest(noteData, requestBody);
+    updateDataInRowView(processedNote, noteData);
+
+    updateNote(noteId, processedNote["title"], processedNote["text"], processedNote["category_id"]);
+
+    callback(processResponse(request, HttpStatusCode::k204NoContent));
 }
