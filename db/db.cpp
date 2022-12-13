@@ -104,3 +104,12 @@ void updateCategory(std::string id, std::string name) {
 result getNote(std::string noteId) {
     return worker.exec("SELECT * FROM notes WHERE id=\'" + noteId +"\'");
 }
+
+
+result getAllNotes() {
+    return worker.exec("SELECT * FROM notes");
+}
+
+result getNotesByAuthor(std::string authorId) {
+    return worker.exec("SELECT * FROM notes WHERE author_id=" + authorId);
+}

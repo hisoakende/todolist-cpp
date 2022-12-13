@@ -26,3 +26,27 @@ void noteView(const HttpRequestPtr &request, Callback &&callback, std::string no
 
     callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
 }
+
+
+void notesView(const HttpRequestPtr &request, Callback &&callback) {
+    Json::Value jsonBody;
+    userAndResponse auth = processAuthorizations(request, jsonBody);
+
+    if (auth.first.size() == 0) {
+        return callback(auth.second);
+    }
+
+    result notesFromBd;
+    if (auth.first["is_admin"] == "t") {
+        notesFromBd = getAllNotes();
+    } else {
+        notesFromBd = getNotesByAuthor(auth.first["user_id"]);
+    }
+
+    rowView noteSchema = {{"id", ""}, {"title", ""}, {"text", ""}, {"author_id", ""}, {"category_id", ""}};
+    rowsView processedNotes = createObjsFromDb(noteSchema, notesFromBd);
+    createJsonBody(jsonBody, processedNotes);
+    replaceRelatedNoteFieldsInObjs(jsonBody);
+
+    callback(processResponse(request, jsonBody, HttpStatusCode::k200OK));
+}

@@ -179,3 +179,10 @@ void replaceRelatedNoteFieldsInObj(Json::Value &json) {
     createJsonForRow(categoryJson, processedCategory);
     json["category"] = categoryJson;
 }
+
+
+void replaceRelatedNoteFieldsInObjs(Json::Value &json) {
+    for (auto &obj : json) {
+        replaceRelatedNoteFieldsInObj(obj);
+    }
+}

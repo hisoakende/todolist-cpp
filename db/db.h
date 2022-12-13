@@ -36,3 +36,7 @@ void deleteCategory(std::string id);
 void updateCategory(std::string id, std::string name);
 
 result getNote(std::string noteId);
+
+result getAllNotes();
+
+result getNotesByAuthor(std::string authorId);

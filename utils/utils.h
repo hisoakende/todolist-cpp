@@ -42,3 +42,5 @@ userAndResponse processAuthorizations(const drogon::HttpRequestPtr &request, Jso
 void updateDataInRowView(rowView &old, rowView new_);
 
 void replaceRelatedNoteFieldsInObj(Json::Value &json);
+
+void replaceRelatedNoteFieldsInObjs(Json::Value &json);
